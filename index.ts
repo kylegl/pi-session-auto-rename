@@ -74,7 +74,8 @@ function parseModelRef(value: string): NameModelConfig | null {
 
 function restoreModelConfig(ctx: ExtensionContext): NameModelConfig | null {
 	const branch = ctx.sessionManager.getBranch();
-	for (const entry of branch) {
+	for (let i = branch.length - 1; i >= 0; i--) {
+		const entry = branch[i];
 		if (entry.type !== "custom" || entry.customType !== CONFIG_ENTRY_TYPE) continue;
 		const data = entry.data as NameModelConfig | undefined;
 		if (!data?.provider || !data?.id) continue;
