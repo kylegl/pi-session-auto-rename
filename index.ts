@@ -303,7 +303,7 @@ export default function autoSessionName(pi: ExtensionAPI) {
 			ui: { notify: (message: string, level: "info" | "warning" | "error") => void };
 			modelRegistry: {
 				find: (provider: string, modelId: string) => { provider: string; id: string } | undefined;
-				getApiKey: (model: { provider: string; id: string }) => Promise<string | undefined>;
+				getApiKeyAndHeaders: (model: { provider: string; id: string }) => Promise<{ ok: true; apiKey?: string; headers?: Record<string, string> } | { ok: false; error: string }>;
 			};
 		},
 		prompt: { role: "user"; content: Array<{ type: "text"; text: string }>; timestamp: number },
@@ -315,11 +315,13 @@ export default function autoSessionName(pi: ExtensionAPI) {
 				return null;
 			}
 
-			const apiKey = await ctx.modelRegistry.getApiKey(model);
-			if (!apiKey) {
+			const authResult = await ctx.modelRegistry.getApiKeyAndHeaders(model);
+			if (!authResult.ok || !authResult.apiKey) {
 				notify(ctx, `No API key for ${model.provider}. Configure it via /login or models.json.`, "warning");
 				return null;
 			}
+
+			const apiKey = authResult.apiKey;
 
 			const response = await complete(
 				model,
@@ -358,7 +360,7 @@ export default function autoSessionName(pi: ExtensionAPI) {
 		sessionManager: { getBranch: () => SessionEntry[] };
 		modelRegistry: {
 			find: (provider: string, modelId: string) => { provider: string; id: string } | undefined;
-			getApiKey: (model: { provider: string; id: string }) => Promise<string | undefined>;
+			getApiKeyAndHeaders: (model: { provider: string; id: string }) => Promise<{ ok: true; apiKey?: string; headers?: Record<string, string> } | { ok: false; error: string }>;
 		};
 	}) {
 		if (namingAttempted || namingInProgress) return;
